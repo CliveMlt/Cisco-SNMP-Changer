@@ -25,8 +25,8 @@ This Python script is designed to automate the modification of SNMP configuratio
 1. **Clone the Repository:**
 
     ```bash
-    git clone https://github.com/your-username/network-configuration-script.git
-    cd network-configuration-script
+    git clone https://github.com/CliveMlt/Cisco-SNMP-Changer/
+    cd Cisco-SNMP-Changer
     ```
 
 2. **Install Dependencies:**
