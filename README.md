@@ -43,12 +43,23 @@ This Python script is designed to automate the modification of SNMP configuratio
     hostname:device_type:username:password:enable_password
     ```
 
-4. **Run the Script:**
+4. **Change SNMP Community Strings:**
 
-    ```bash
-    python network_config_script.py
+    Update the `cisco_snmp_changer.py` python script with the details of your SNMP community strings by changing the items below:
+
+    ```plaintext
+    Current SNMP read only string = old_snmp_ro 
+    Current SNMP read write string = old_snmp_rw
+    New SNMP read only string = NEW1RO
+    New SNMP read only string = NEW2RW
     ```
 
-5. **View Logs:**
+5. **Run the Script:**
+
+    ```bash
+    python cisco_snmp_changer.py
+    ```
+
+6. **View Logs:**
 
     Check the `script_log.txt` file for detailed logs of script execution.
