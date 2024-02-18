@@ -1,0 +1,4 @@
+#Device List Examples:
+#hostname, device_type, username, password, enable_password
+192.168.10.1:cisco_ios:username:password:enable_pass
+192.168.10.2:cisco_xr:username:password:
