@@ -9,10 +9,10 @@ import subprocess
 logging.basicConfig(filename='script_log.txt', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 #################################################################################################
-#Banner Intro
+# Banner Intro
 def banner():
     print(
-    """
+        """
    _____ _   ____  _______     ________  _____    _   __________________ 
   / ___// | / /  |/  / __ \   / ____/ / / /   |  / | / / ____/ ____/ __ \\
   \__ \/  |/ / /|_/ / /_/ /  / /   / /_/ / /| | /  |/ / / __/ __/ / /_/ /
@@ -21,7 +21,7 @@ def banner():
                                                                                                                                                                                                                      
     """
     )
-    
+
 #################################################################################################
 def ping_device(ip):
     """Check if device is reachable."""
@@ -33,29 +33,61 @@ def ping_device(ip):
         return False
 
 #################################################################################################
+def check_reachability(ip, username, password, device_type):
+    # Check if the device is reachable using ping
+    if ping_device(ip):
+        logging.info(f"Device {ip} is reachable via ping.")
+        return True
+
+    # If ping fails, try SSH reachability
+    try:
+        logging.info(f"Ping failed. Attempting SSH reachability to {ip}")
+        ssh_device = {
+            'device_type': device_type,
+            'ip': ip,
+            'username': username,
+            'password': password,
+        }
+        with ConnectHandler(**ssh_device) as ssh_conn:
+            logging.info(f"SSH reachability to {ip} successful.")
+            return True
+    except Exception as e:
+        logging.error(f"SSH reachability to {ip} failed: {str(e)}")
+        return False
+
+#################################################################################################
 def get_device_info(device_line):
     """Extracts device info from a line in the Devices.txt file."""
-    hostname, device_type, username, password, enable_password = device_line.strip().split(':')
-    return {
-        'device_type': device_type,
-        'ip': hostname,
-        'username': username,
-        'password': password,
-        'secret': enable_password  
-    }
+    # Check if the line contains the expected number of values
+    if ':' not in device_line or device_line.count(':') != 4:
+        logging.warning(f"Skipping invalid line in Devices.txt: {device_line}")
+        return None
+
+    try:
+        hostname, device_type, username, password, enable_password = device_line.strip().split(':')
+        return {
+            'device_type': device_type,
+            'ip': hostname,
+            'username': username,
+            'password': password,
+            'secret': enable_password  
+        }
+    except ValueError:
+        logging.warning(f"Skipping line with unexpected format in Devices.txt: {device_line}")
+        return None
 
 #################################################################################################
 def modify_snmp_config(device_info):
     try:
-        """Modify snmp community strings."""
+        """Modify SNMP community strings."""
 
         # Check if the device is reachable
-        if not ping_device(device_info['ip']):
+        if not check_reachability(device_info['ip'], device_info['username'], device_info['password'], device_info['device_type']):
             logging.error(f"Device {device_info['ip']} is not reachable.")
             return f"Device {device_info['ip']} is not reachable."
 
         print(f"Connecting to {device_info['ip']}")
-        
+
         connection = ConnectHandler(**device_info)
 
         if device_info['device_type'] == 'cisco_ios':
@@ -68,7 +100,6 @@ def modify_snmp_config(device_info):
                 logging.error(f"Failed to enter enable mode on {device_info['ip']}")
                 return f"Failed to enter enable mode on {device_info['ip']}"
 
-
         # Check for old_snmp_ro
         snmp_output_old_snmp_ro = connection.send_command("sh run | inc old_snmp_ro")
         logging.info(f"Searching for SNMP RO string' from {device_info['ip']}:{snmp_output_old_snmp_ro}")
@@ -78,12 +109,12 @@ def modify_snmp_config(device_info):
         logging.info(f"Searching for SNMP RW string' from {device_info['ip']}:{snmp_output_old_snmp_rw}")
 
         lines_to_remove = [line for line in snmp_output_old_snmp_ro.splitlines() if 'old_snmp_ro' in line] + \
-                        [line for line in snmp_output_old_snmp_rw.splitlines() if 'old_snmp_rw' in line]
-        
+                          [line for line in snmp_output_old_snmp_rw.splitlines() if 'old_snmp_rw' in line]
+
         if lines_to_remove:
             # Enter configuration mode
             connection.config_mode()
-            
+
             # Remove old config lines
             for line in lines_to_remove:
                 print(f"Sending command to {device_info['ip']}: no {line}")
@@ -140,15 +171,18 @@ def modify_snmp_config(device_info):
         logging.error(f"Error processing {device_info['ip']}: {str(e)}")
         return f"Error processing {device_info['ip']}: {str(e)}"
 
-
 #################################################################################################
 def main():
     with open('Devices.txt', 'r') as f:
         # Exclude commented-out lines and blank lines
         device_lines = [line for line in f.readlines() if not line.strip().startswith('#') and line.strip()]
 
-    # Extract the device information from the file
-    devices = [get_device_info(line) for line in device_lines]
+    # Get the device information
+    devices = [get_device_info(line) for line in device_lines if get_device_info(line)]
+
+    if not devices:
+        logging.warning("No valid devices found in Devices.txt. Exiting script.")
+        return
 
     # ThreadPoolExecutor is used to send the commands to devices concurrently
     try:
