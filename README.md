@@ -1,6 +1,8 @@
 # Cisco SNMP Changer
  Change Cisco SNMP community strings on IOS and IOS XR
 
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/CliveMlt/Cisco-SNMP-Changer)
+
 ## Overview
 
 This Python script is designed to automate the modification of SNMP configurations on Cisco IOS and XR devices. It utilizes the Netmiko library for network automation and supports concurrent execution on multiple devices.
@@ -63,3 +65,4 @@ This Python script is designed to automate the modification of SNMP configuratio
 6. **View Logs:**
 
     Check the `script_log.txt` file for detailed logs of script execution.
+
